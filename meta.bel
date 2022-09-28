@@ -1,0 +1,172 @@
+LF term : type =
+  | true : term
+  | false : term
+  | if_then_else : term → term → term → term
+  | z : term
+  | succ : term → term
+  | pred : term → term
+  | iszero : term → term
+;
+
+LF value : term → type =
+  | v_z : value z
+  | v_succ : value V → value (succ V)
+  | v_true : value true
+  | v_false : value false
+;
+
+% Prove that [succ (succ z)] is a value by constructing a derivation for
+% [succ (succ z) value]:
+let example : [ ⊢ value (succ (succ z))] = [ ⊢ v_succ (v_succ (v_z))];
+
+let example : [x:term, v:value x ⊢ value (succ (succ x))] =
+              [x:term, v:value x ⊢ v_succ (v_succ v)];
+
+% Examples:
+
+let v1 = [ ⊢ if_then_else false z (succ z)];
+let v2 = [ ⊢ iszero (pred (succ z))];
+
+--not
+let w1 = [ ⊢ iszero ];
+
+--not
+let w2 = [ ⊢ if_then_else z z];
+
+% Small-step operational semantics:
+
+LF step : term → term → type =
+  % Congruence Rules
+  | e_succ : step M N →
+	   % ----------------------
+	     step (succ M) (succ N)
+
+  | e_pred : step M N →
+	   % ----------------------
+	     step (pred M) (pred N)
+
+  | e_iszero : step M N →
+	     % --------------------------
+	       step (iszero M) (iszero N)
+
+  | e_if_then_else : step M1 M1' →
+		   % -----------------------------------------------------
+		     step (if_then_else M1 M2 M3) (if_then_else M1' M2 M3)
+
+  % Reduction Rules (Axioms)
+  | e_pred_zero : step (pred z) z
+  | e_if_true : step (if_then_else true M2 M3) M2
+  | e_if_false : step (if_then_else false M2 M3) M3
+  | e_iszero_zero : step (iszero z) true
+
+  | e_pred_succ : value V →
+		% ----------------------
+		  step (pred (succ V)) V
+
+  | e_iszero_succ : value V →
+		  % ----------------------------
+		    step (iszero (succ V)) false
+;
+
+let e1 : [ ⊢ step (pred (succ (pred z))) (pred (succ z))] =
+         [ ⊢ e_pred (e_succ e_pred_zero)];
+
+let e2 : [ ⊢ step (pred (succ z)) z] = [ ⊢ e_pred_succ v_z];
+
+% Typing
+
+LF tp : type =
+  | nat : tp
+  | bool : tp
+;
+
+LF hastype : term → tp → type =
+  | t_true : hastype true bool
+  | t_false : hastype false bool
+  | t_zero : hastype z nat
+
+  | t_if : hastype M bool → hastype M1 T → hastype M2 T →
+         % ----------------------------------------------
+	   hastype (if_then_else M M1 M2) T
+
+  | t_succ : hastype M nat →
+	   % --------------------
+	     hastype (succ M) nat
+
+  | t_pred : hastype M nat →
+	   % --------------------
+	     hastype (pred M) nat
+
+  | t_iszero : hastype M nat →
+	     % -----------------------
+	       hastype (iszero M) bool
+;
+
+% Type Preservation
+% IF hastype M T AND step M N THEN hastype N T
+%
+% Programming point of view:
+%  Given a typing derivation ⊢ M : T and a derivation for ⊢ M → N, return
+%  a typing derivation ⊢ N : T.
+%
+% For an enconding in Beluga, note:
+%  On paper  | Type in Beluga
+%  ----------|------------------
+%  ⊢ M : T   | [ ⊢ hastype M T ]
+%  ⊢ M → N   | [ ⊢ step    M N ]
+%
+
+rec tps : [ ⊢ hastype M T] → [ ⊢ step M N] → [ ⊢ hastype N T] =
+/ total s (tps _ _ _ _ s) /
+fn d ⇒ fn s ⇒ case s of
+  | [ ⊢ e_if_true]        ⇒ let [ ⊢ t_if D D1 D2] = d in [ ⊢ D1]
+  | [ ⊢ e_if_false]       ⇒ let [ ⊢ t_if D D1 D2] = d in [ ⊢ D2]
+  | [ ⊢ e_if_then_else S] ⇒ let [ ⊢ t_if D D1 D2] = d in
+			    let [ ⊢ D'] = tps [ ⊢ D] [ ⊢ S] in
+			    [ ⊢ t_if D' D1 D2]
+  | [ ⊢ e_pred_zero]      ⇒ let [ ⊢ t_pred _] = d in [ ⊢ t_zero]
+  | [ ⊢ e_pred_succ _]    ⇒ let [ ⊢ t_pred (t_succ D)] = d in [ ⊢ D]
+  | [ ⊢ e_iszero_zero]    ⇒ let [ ⊢ t_iszero _] = d in [ ⊢ t_true]
+  | [ ⊢ e_iszero_succ _]  ⇒ let [ ⊢ t_iszero _] = d in [ ⊢ t_false]
+  | [ ⊢ e_pred S]         ⇒ let [ ⊢ t_pred D] = d in
+			    let [ ⊢ D'] = tps [ ⊢ D] [ ⊢ S] in
+			    [ ⊢ t_pred D']
+  | [ ⊢ e_succ S]         ⇒ let [ ⊢ t_succ D] = d in
+			    let [ ⊢ D'] = tps [ ⊢ D] [ ⊢ S] in
+			    [ ⊢ t_succ D']
+  | [ ⊢ e_iszero S]       ⇒ let [ ⊢ t_iszero D] = d in
+			    let [ ⊢ D'] = tps [ ⊢ D] [ ⊢ S] in
+			    [ ⊢ t_iszero D']
+;
+
+% Uniqueness of small-step evaluation
+% A proof that evaluation using the small-step rules yields a unique value.
+% IF step T T1 AND step T T2 THEN equal T1 T2.
+%
+
+% Define equality
+LF equal : term → term → type =
+  | ref : equal M M
+;
+
+% Define empty for falsehood
+not_possible : type.
+
+% A lemma
+rec values_dont_step : [ ⊢ step M N] → [ ⊢ value M] → [ ⊢ not_possible] =
+/ total v (values_dont_step _ _ _ v) /
+fn s ⇒ fn v ⇒ case v of
+  | [ ⊢ v_false]  ⇒ impossible s
+  | [ ⊢ v_true]   ⇒ impossible s
+  | [ ⊢ v_z]      ⇒ impossible s
+  | [ ⊢ v_succ V] ⇒ let [ ⊢ e_succ D] = s in
+		    values_dont_step [ ⊢ D] [ ⊢ V]
+;
+
+rec unique : [ ⊢ step M M1] → [ ⊢ step M M2] → [ ⊢ equal M1 M2] =
+/ total s (unique _ _ _ s) /
+fn s1 ⇒ fn s2 ⇒ case s1 of
+  | [ ⊢ e_succ D] ⇒ let [ ⊢ e_succ F] = s2 in
+		    let [ ⊢ ref] = unique [ ⊢ D] [ ⊢ F] in
+		    [ ⊢ ref]
+;

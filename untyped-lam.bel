@@ -1,0 +1,36 @@
+% Untyped lambda terms using HOAS:
+LF tm : type =
+  | lam : (tm → tm) → tm
+  | app : tm → tm -> tm
+;
+
+% Encoding of a small-step, by-name, operational semantics for the lambda
+% calculus:
+LF step : tm → tm → type =
+
+  | e_app : step M M' →
+	  % -------------------------
+	    step (app M N) (app M' N)
+
+  | beta : step (app (lam M) N) (M N)
+;
+% step is indexed by two terms, it is a binary relation between terms.
+
+% Syntax of types:
+LF tp : type =
+  | base : tp
+  | arr : tp → tp → tp
+;
+
+% A typing judgement as an indexed type.
+% oftype as relating a term tm to a type tp.
+LF oftype : tm → tp → type =
+  | t_app : oftype M (arr A B) → oftype N A →
+          % ---------------------------------
+	    oftype (app M N) B
+
+          % For any term x, if x is of type A, then M x is of type B.
+  | t_lam : ({x : tm} oftype x A → oftype (M x) B) →
+	  % ----------------------------------------
+	    oftype (lam M) (arr A B)
+;

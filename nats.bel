@@ -1,0 +1,11 @@
+LF nat : type =
+  | zero : nat
+  | succ : nat -> nat
+;
+
+LF le : nat -> nat -> type =
+  | le_z : le zero N
+  | le_s : le N M ->
+         % --------------------
+	   le (succ N) (succ M)
+;
