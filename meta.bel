@@ -1,17 +1,17 @@
 LF term : type =
-  | true : term
-  | false : term
+  | true         : term
+  | false        : term
   | if_then_else : term → term → term → term
-  | z : term
-  | succ : term → term
-  | pred : term → term
-  | iszero : term → term
+  | z            : term
+  | succ         : term → term
+  | pred         : term → term
+  | iszero       : term → term
 ;
 
 LF value : term → type =
-  | v_z : value z
-  | v_succ : value V → value (succ V)
-  | v_true : value true
+  | v_z     : value z
+  | v_succ  : value V → value (succ V)
+  | v_true  : value true
   | v_false : value false
 ;
 
@@ -54,9 +54,9 @@ LF step : term → term → type =
 		     step (if_then_else M1 M2 M3) (if_then_else M1' M2 M3)
 
   % Reduction Rules (Axioms)
-  | e_pred_zero : step (pred z) z
-  | e_if_true : step (if_then_else true M2 M3) M2
-  | e_if_false : step (if_then_else false M2 M3) M3
+  | e_pred_zero   : step (pred z) z
+  | e_if_true     : step (if_then_else true M2 M3) M2
+  | e_if_false    : step (if_then_else false M2 M3) M3
   | e_iszero_zero : step (iszero z) true
 
   | e_pred_succ : value V →
@@ -76,14 +76,14 @@ let e2 : [ ⊢ step (pred (succ z)) z] = [ ⊢ e_pred_succ v_z];
 % Typing
 
 LF tp : type =
-  | nat : tp
+  | nat  : tp
   | bool : tp
 ;
 
 LF hastype : term → tp → type =
-  | t_true : hastype true bool
+  | t_true  : hastype true bool
   | t_false : hastype false bool
-  | t_zero : hastype z nat
+  | t_zero  : hastype z nat
 
   | t_if : hastype M bool → hastype M1 T → hastype M2 T →
          % ----------------------------------------------
@@ -145,9 +145,7 @@ fn d ⇒ fn s ⇒ case s of
 %
 
 % Define equality
-LF equal : term → term → type =
-  | ref : equal M M
-;
+LF equal : term → term → type = ref : equal M M ;
 
 % Define empty for falsehood
 not_possible : type.
