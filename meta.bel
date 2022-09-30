@@ -9,10 +9,10 @@ LF term : type =
 ;
 
 LF value : term → type =
-  | v_z     : value z
-  | v_succ  : value V → value (succ V)
   | v_true  : value true
   | v_false : value false
+  | v_z     : value z
+  | v_succ  : value V → value (succ V)
 ;
 
 % Prove that [succ (succ z)] is a value by constructing a derivation for
@@ -54,9 +54,9 @@ LF step : term → term → type =
 		     step (if_then_else M1 M2 M3) (if_then_else M1' M2 M3)
 
   % Reduction Rules (Axioms)
-  | e_pred_zero   : step (pred z) z
   | e_if_true     : step (if_then_else true M2 M3) M2
   | e_if_false    : step (if_then_else false M2 M3) M3
+  | e_pred_zero   : step (pred z) z
   | e_iszero_zero : step (iszero z) true
 
   | e_pred_succ : value V →
@@ -141,30 +141,99 @@ fn d ⇒ fn s ⇒ case s of
 
 % Uniqueness of small-step evaluation
 % A proof that evaluation using the small-step rules yields a unique value.
-% IF step T T1 AND step T T2 THEN equal T1 T2.
+% IF step M M1 AND step M M2 THEN equal M1 M2.
 %
 
 % Define equality
-LF equal : term → term → type = ref : equal M M ;
+LF equal : term → term → type = ref : equal M M;
 
 % Define empty for falsehood
 not_possible : type.
 
-% A lemma
+% Lemma
 rec values_dont_step : [ ⊢ step M N] → [ ⊢ value M] → [ ⊢ not_possible] =
-/ total v (values_dont_step _ _ _ v) /
-fn s ⇒ fn v ⇒ case v of
-  | [ ⊢ v_false]  ⇒ impossible s
-  | [ ⊢ v_true]   ⇒ impossible s
-  | [ ⊢ v_z]      ⇒ impossible s
-  | [ ⊢ v_succ V] ⇒ let [ ⊢ e_succ D] = s in
+/ total val (values_dont_step _ _ _ val) /
+fn step ⇒ fn val ⇒
+  % On structural induction on the value.
+  case val of
+  % true and false are trivial as there are no constructors.
+  | [ ⊢ v_false]  ⇒ impossible step
+  | [ ⊢ v_true]   ⇒ impossible step
+  % Here we want to argue that *every number* that is a value does not step.
+  | [ ⊢ v_z]      ⇒ impossible step
+  | [ ⊢ v_succ V] ⇒ let [ ⊢ e_succ D] = step in
 		    values_dont_step [ ⊢ D] [ ⊢ V]
 ;
 
+% Theorem
 rec unique : [ ⊢ step M M1] → [ ⊢ step M M2] → [ ⊢ equal M1 M2] =
-/ total s (unique _ _ _ s) /
-fn s1 ⇒ fn s2 ⇒ case s1 of
-  | [ ⊢ e_succ D] ⇒ let [ ⊢ e_succ F] = s2 in
-		    let [ ⊢ ref] = unique [ ⊢ D] [ ⊢ F] in
-		    [ ⊢ ref]
+/ total s2 (unique M M1 M2 s1 s2) /
+fn s1 ⇒ fn s2 ⇒
+  case s1 of
+    | [ ⊢ e_pred_zero] ⇒
+	  (case s2 of
+	    | [ ⊢ e_pred_zero] ⇒ [ ⊢ ref]
+	    | [ ⊢ e_pred D] ⇒ impossible [ ⊢ D])
+
+    | [ ⊢ e_succ D] ⇒
+	  let [ ⊢ e_succ F] = s2 in
+	  let [ ⊢ ref] = unique [ ⊢ D] [ ⊢ F] in
+	  [ ⊢ ref]
+
+    | [ ⊢ e_pred_succ V] ⇒
+	  (case s2 of
+	    | [ ⊢ e_pred_succ _] ⇒ [ ⊢ ref]
+	    | [ ⊢ e_pred D] ⇒
+		  impossible (values_dont_step [ ⊢ D] [ ⊢ v_succ V]))
+
+    | [ ⊢ e_pred D] ⇒
+	  (case s2 of
+	    | [ ⊢ e_pred F] ⇒
+		  let [ ⊢ ref] = unique [ ⊢ D] [ ⊢ F] in [ ⊢ ref]
+	    | [ ⊢ e_pred_zero] ⇒
+		  impossible [ ⊢ D]
+	    | [ ⊢ e_pred_succ V] ⇒
+		  impossible (values_dont_step [ ⊢ D] [ ⊢ v_succ V]))
+
+    | [ ⊢ e_iszero D ] ⇒
+	  (case s2 of
+	    | [ ⊢ e_iszero F] ⇒
+		  let [ ⊢ ref] = unique [ ⊢ D] [ ⊢ F] in [ ⊢ ref]
+	    | [ ⊢ e_iszero_zero] ⇒
+		  impossible (values_dont_step [ ⊢ D] [ ⊢ v_z])
+	    | [ ⊢ e_iszero_succ V] ⇒
+		  impossible (values_dont_step [ ⊢ D] [ ⊢ v_succ V]))
+
+    | [ ⊢ e_iszero_zero] ⇒
+	  (case s2 of
+	    | [ ⊢ e_iszero F] ⇒
+		  impossible (values_dont_step [ ⊢ F] [ ⊢ v_z])
+	    | [ ⊢ e_iszero_zero] ⇒ [ ⊢ ref])
+
+    | [ ⊢ e_iszero_succ V] ⇒
+	  (case s2 of
+	    | [ ⊢ e_iszero F] ⇒
+		  impossible (values_dont_step [ ⊢ F] [ ⊢ v_succ V])
+	    | [ ⊢ e_iszero_succ _] ⇒ [ ⊢ ref])
+
+    | [ ⊢ e_if_false] ⇒
+	  (case s2 of
+	    | [ ⊢ e_if_false] ⇒ [ ⊢ ref]
+	    | [ ⊢ e_if_then_else F] ⇒
+		  impossible (values_dont_step [ ⊢ F] [ ⊢ v_false]))
+
+    | [ ⊢ e_if_true] ⇒
+	  (case s2 of
+	    | [ ⊢ e_if_true] ⇒ [ ⊢ ref]
+	    | [ ⊢ e_if_then_else F] ⇒
+		  impossible (values_dont_step [ ⊢ F] [ ⊢ v_true]))
+
+    | [ ⊢ e_if_then_else D] ⇒
+	  (case s2 of
+	    | [ ⊢ e_if_true] ⇒
+		  impossible (values_dont_step [ ⊢ D] [ ⊢ v_true])
+	    | [ ⊢ e_if_false] ⇒
+		  impossible (values_dont_step [ ⊢ D] [ ⊢ v_false])
+	    | [ ⊢ e_if_then_else F] ⇒
+		  let [ ⊢ ref] = unique [ ⊢ D] [ ⊢ F] in [ ⊢ ref])
 ;
