@@ -67,12 +67,20 @@ LF step : term → term → type =
 		    step (iszero (succ V)) false
 ;
 
-% Multi-step relation is the reflexive transitive closure over the
-% single step relation.
+% Multi-step relation is the reflexive transitive closure
+% over the single step relation.
 LF multi_step : term → term → type =
-  | ms_tr : multi_step M N' → multi_step N' N → multi_step M N
-  | ms_ref : multi_step M M
-  | ms_step : step M N → multi_step M N
+  | ms_ref :
+           % --------------
+             multi_step M M
+
+  | ms_tr : multi_step M N' → multi_step N' N →
+          % -----------------------------------
+            multi_step M N
+
+  | ms_step : step M N →
+            % --------------
+              multi_step M N
 ;
 
 let e1 : [ ⊢ step (pred (succ (pred z))) (pred (succ z))] =
@@ -256,4 +264,41 @@ fn d ⇒ fn s ⇒ case s of
   | [ ⊢ ms_tr S1 S2] ⇒ let d1 = multi_tps d [ ⊢ S1] in
 		       multi_tps d1 [ ⊢ S2]
   | [ ⊢ ms_step S] ⇒ tps d [ ⊢ S]
+;
+
+% Multi Step Lemmas:
+%  1. IF M →* M' THEN (pred M) →* (pred M').
+%  2. IF M →* M' THEN (succ M) →* (succ M').
+%  3. IF M →* M' THEN (iszero M) →* (iszero M').
+%  4. IF M →* M' THEN (if M then M1 else M2) →* (if M' then M1 else M2).
+
+% Lemma (1):
+% IF multi_step M M' THEN multi_step (pred M) (pred M').
+rec mstep_pred : [ ⊢ multi_step M M'] → [ ⊢ multi_step (pred M) (pred M')] =
+/ total ms (mstep_pred m m' ms) /
+fn ms ⇒ case ms of
+| [ ⊢ ms_ref] ⇒ [ ⊢ ms_ref]
+| [ ⊢ ms_step S] ⇒ [ ⊢ ms_step (e_pred S)]
+| [ ⊢ ms_tr MS1 MS2] ⇒
+    let [ ⊢ MS1'] = mstep_pred [ ⊢ MS1] in
+    let [ ⊢ MS2'] = mstep_pred [ ⊢ MS2] in
+    [ ⊢ ms_tr MS1' MS2']
+;
+
+% Lemma (4):
+% IF multi_step M M' THEN
+%  multi_step (if_then_else M M2 M3) (if_then_else M' M2 M3).
+rec mstep_if_then_else :
+    [ ⊢ multi_step M M'] →
+    {M2 : [ ⊢ term]} {M3 : [ ⊢ term]}
+    [ ⊢ multi_step (if_then_else M M2 M3) (if_then_else M' M2 M3)] =
+/ total ms (mstep_if_then_else _ _ ms) /
+fn ms ⇒ case ms of
+| [ ⊢ ms_ref ] ⇒ mlam M2 ⇒ mlam M3 ⇒ [ ⊢ ms_ref]
+| [ ⊢ ms_step S] ⇒ mlam M2 ⇒ mlam M3 ⇒ [ ⊢ ms_step (e_if_then_else S)]
+| [ ⊢ ms_tr S1 S2] ⇒
+    mlam M2 ⇒ mlam M3 ⇒
+    let [ ⊢ S1'] = mstep_if_then_else [ ⊢ S1] [ ⊢ M2] [ ⊢ M3] in
+    let [ ⊢ S2'] = mstep_if_then_else [ ⊢ S2] [ ⊢ M2] [ ⊢ M3] in
+    [ ⊢ ms_tr S1' S2']
 ;
