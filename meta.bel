@@ -12,7 +12,8 @@ LF value : term → type =
   | v_true  : value true
   | v_false : value false
   | v_z     : value z
-  | v_succ  : value V → value (succ V)
+  | v_succ  : value V →
+              value (succ V)
 ;
 
 % Prove that [succ (succ z)] is a value by constructing a derivation for
@@ -421,4 +422,46 @@ LF bigstep : term → term → type =
               bigstep (if_then_else M1 M2 _) V
 | b_if_false : bigstep M1 false → bigstep M3 V →
                bigstep (if_then_else M1 _ M3) V
+;
+
+% Value soundness.
+% Two interesting properties about values in the big-step semantics:
+%  1. An expressions always evaluates to a value;
+%  2. Evaluation yields a unique value
+%     (not trivial for Beluga because there are multiple ways to prove
+%      that succ V where V value evaluates to succ V).
+
+% (1)
+rec bstep_value : [ ⊢ bigstep M V] → [ ⊢ value V] =
+/ total b (bstep_value _ _ b) /
+fn b ⇒ case b of
+| [ ⊢ b_value E] ⇒ [ ⊢ E]
+| [ ⊢ b_succ B] ⇒ let [ ⊢ E] = bstep_value [ ⊢ B] in
+                  [ ⊢ v_succ E]
+
+| [ ⊢ b_pred_zero B] ⇒ bstep_value [ ⊢ B]
+| [ ⊢ b_pred_succ B] ⇒ let [ ⊢ v_succ E] = bstep_value [ ⊢ B] in
+                       [ ⊢ E]
+
+| [ ⊢ b_iszero_zero B] ⇒ [ ⊢ v_true]
+| [ ⊢ b_iszero_succ B] ⇒ [ ⊢ v_false]
+
+| [ ⊢ b_if_true _ B2] ⇒ bstep_value [ ⊢ B2]
+| [ ⊢ b_if_false _ B3] ⇒ bstep_value [ ⊢ B3]
+;
+
+% (2)
+rec bstep_values_stagnate : [ ⊢ bigstep V1 V2] → [ ⊢ value V1] →
+                            [ ⊢ equal V1 V2] =
+/ total e (bstep_values_stagnate _ _ _ e) /
+fn b ⇒ fn e ⇒ case e of
+| [ ⊢ v_z] ⇒ let [ ⊢ b_value _] = b in [ ⊢ ref]
+| [ ⊢ v_true] ⇒ let [ ⊢ b_value _] = b in [ ⊢ ref]
+| [ ⊢ v_false] ⇒ let [ ⊢ b_value _] = b in [ ⊢ ref]
+| [ ⊢ v_succ E'] ⇒
+    (case b of
+     | [ ⊢ b_value _] ⇒ [ ⊢ ref]
+     | [ ⊢ b_succ B'] ⇒
+         let [ ⊢ ref] = bstep_values_stagnate [ ⊢ B'] [ ⊢ E'] in
+         [ ⊢ ref])
 ;
