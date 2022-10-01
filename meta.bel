@@ -392,3 +392,33 @@ fn d ⇒ case d of
          let [ ⊢ MS'] = mstep_iszero [ ⊢ MS] in
          [ ⊢ result (ms_tr MS' (ms_step (e_iszero_succ V))) v_false])
 ;
+
+% Relating small-step and big-step (natural) semantics.
+% Big-step semantics directly formulates the notion of
+%  "the term M evaluates to the final value V".
+
+% An LF type family to encode the judgements.
+% Use this LF type family to define the relation bigstep between two terms.
+% In these rules, we do not enforce that we always return a value
+%  (value soundness).
+LF bigstep : term → term → type =
+| b_value : value V →
+            bigstep V V
+| b_succ : bigstep M V →
+           bigstep (succ M) (succ V)
+
+| b_pred_zero : bigstep M z →
+                bigstep (pred M) z
+| b_pred_succ : bigstep M (succ V) →
+                bigstep (pred M) V
+
+| b_iszero_zero : bigstep M z →
+                  bigstep (iszero M) true
+| b_iszero_succ : bigstep M (succ V) →
+                  bigstep (iszero M) false
+
+| b_if_true : bigstep M1 true → bigstep M2 V →
+              bigstep (if_then_else M1 M2 _) V
+| b_if_false : bigstep M1 false → bigstep M3 V →
+               bigstep (if_then_else M1 _ M3) V
+;
