@@ -510,3 +510,61 @@ fn b ⇒ case b of
     let [ ⊢ S1'] = mstep_if_then_else [ ⊢ S1] [ ⊢ M2] [ ⊢ M3] in
     [ ⊢ ms_tr (ms_tr S1' (ms_step e_if_false)) S3]
 ;
+
+% (2)
+rec step_bstep_to_bstep : [ ⊢ step M N] → [ ⊢ bigstep N V] → [ ⊢ bigstep M V] =
+/ total s (step_bstep_to_bstep _ _ _ s _) /
+fn s ⇒ fn b ⇒
+let [ ⊢ B] = b in
+case s of
+| [ ⊢ e_if_true] ⇒ [ ⊢ b_if_true (b_value v_true) B]
+| [ ⊢ e_if_false] ⇒ [ ⊢ b_if_false (b_value v_false) B]
+| [ ⊢ e_pred_zero] ⇒
+    let [ ⊢ ref] = bstep_values_stagnate [ ⊢ B] [ ⊢ v_z] in
+    [ ⊢ b_pred_zero B]
+| [ ⊢ e_pred_succ E] ⇒
+    let [ ⊢ ref] = bstep_values_stagnate [ ⊢ B] [ ⊢ E] in
+    [ ⊢ b_pred_succ (b_value (v_succ E))]
+| [ ⊢ e_iszero_zero] ⇒
+    let [ ⊢ ref] = bstep_values_stagnate [ ⊢ B] [ ⊢ v_true] in
+    [ ⊢ b_iszero_zero (b_value v_z)]
+| [ ⊢ e_iszero_succ E] ⇒
+    let [ ⊢ ref] = bstep_values_stagnate [ ⊢ B] [ ⊢ v_false] in
+    [ ⊢ b_iszero_succ (b_value (v_succ E))]
+| [ ⊢ e_if_then_else S] ⇒
+    (case [ ⊢ B] of
+     | [ ⊢ b_value E] ⇒ impossible [ ⊢ E]
+     | [ ⊢ b_if_true B1' B2'] ⇒
+         let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
+         [ ⊢ b_if_true B1 B2']
+     | [ ⊢ b_if_false B1' B3'] ⇒
+       let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
+       [ ⊢ b_if_false B1 B3'])
+| [ ⊢ e_succ S] ⇒
+    (case [ ⊢ B] of
+     | [ ⊢ b_value E] ⇒
+       let [ ⊢ v_succ E'] = [ ⊢ E] in
+       let [ ⊢ B'] = step_bstep_to_bstep [ ⊢ S] [ ⊢ b_value E'] in
+       [ ⊢ b_succ B']
+     | [ ⊢ b_succ B] ⇒
+       let [ ⊢ B'] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B] in
+       [ ⊢ b_succ B'])
+| [ ⊢ e_pred S] ⇒
+    (case [ ⊢ B] of
+     | [ ⊢ b_value E] ⇒ impossible [ ⊢ E]
+     | [ ⊢ b_pred_zero B1'] ⇒
+         let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
+         [ ⊢ b_pred_zero B1]
+     | [ ⊢ b_pred_succ B1'] ⇒
+         let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
+         [ ⊢ b_pred_succ B1])
+| [ ⊢ e_iszero S] ⇒
+    (case [ ⊢ B] of
+     | [ ⊢ b_value E] ⇒ impossible [ ⊢ E]
+     | [ ⊢ b_iszero_zero B1'] ⇒
+       let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
+       [ ⊢ b_iszero_zero B1]
+     | [ ⊢ b_iszero_succ B1'] ⇒
+       let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
+       [ ⊢ b_iszero_succ B1])
+;
