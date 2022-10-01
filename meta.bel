@@ -465,3 +465,48 @@ fn b ⇒ fn e ⇒ case e of
          let [ ⊢ ref] = bstep_values_stagnate [ ⊢ B'] [ ⊢ E'] in
          [ ⊢ ref])
 ;
+
+% Continue to prove that the small-step and big-step semantics for this
+% language coincide.
+% That is, M →* V IFF bigstep M V.
+% We prove the two directions separately.
+
+% (1)
+% (This proves that the big-step relation is included in the multi-step
+%  relation.)
+rec bstep_to_mstep : [ ⊢ bigstep M V] → [ ⊢ multi_step M V] =
+/ total b (bstep_to_mstep _ _ b) /
+fn b ⇒ case b of
+| [ ⊢ b_value _ ] ⇒ [ ⊢ ms_ref]
+| [ ⊢ b_succ B] ⇒
+    let [ ⊢ S] = bstep_to_mstep [ ⊢ B] in
+    mstep_succ [ ⊢ S]
+| [ ⊢ b_pred_zero B] ⇒
+    let [ ⊢ S] = bstep_to_mstep [ ⊢ B] in
+    let [ ⊢ S'] = mstep_pred [ ⊢ S] in
+    [ ⊢ ms_tr S' (ms_step e_pred_zero)]
+| [ ⊢ b_pred_succ B] ⇒
+    let [ ⊢ S] = bstep_to_mstep [ ⊢ B] in
+    let [ ⊢ S'] = mstep_pred [ ⊢ S] in
+    let [ ⊢ v_succ V] = bstep_value [ ⊢ B] in
+    [ ⊢ ms_tr S' (ms_step (e_pred_succ V))]
+| [ ⊢ b_iszero_zero B] ⇒
+    let [ ⊢ S] = bstep_to_mstep [ ⊢ B] in
+    let [ ⊢ S'] = mstep_iszero [ ⊢ S] in
+    [ ⊢ ms_tr S' (ms_step e_iszero_zero)]
+| [ ⊢ b_iszero_succ B] ⇒
+    let [ ⊢ S] = bstep_to_mstep [ ⊢ B] in
+    let [ ⊢ S'] = mstep_iszero [ ⊢ S] in
+    let [ ⊢ v_succ V] = bstep_value [ ⊢ B] in
+    [ ⊢ ms_tr S' (ms_step (e_iszero_succ V))]
+| [ ⊢ b_if_true B1 B2] : [ ⊢ bigstep (if_then_else _ M2 M3) _] ⇒
+    let [ ⊢ S1] = bstep_to_mstep [ ⊢ B1] in
+    let [ ⊢ S2] = bstep_to_mstep [ ⊢ B2] in
+    let [ ⊢ S1'] = mstep_if_then_else [ ⊢ S1] [ ⊢ M2] [ ⊢ M3] in
+    [ ⊢ ms_tr (ms_tr S1' (ms_step e_if_true)) S2]
+| [ ⊢ b_if_false B1 B3] : [ ⊢ bigstep (if_then_else _ M2 M3) _] ⇒
+    let [ ⊢ S1] = bstep_to_mstep [ ⊢ B1] in
+    let [ ⊢ S3] = bstep_to_mstep [ ⊢ B3] in
+    let [ ⊢ S1'] = mstep_if_then_else [ ⊢ S1] [ ⊢ M2] [ ⊢ M3] in
+    [ ⊢ ms_tr (ms_tr S1' (ms_step e_if_false)) S3]
+;
