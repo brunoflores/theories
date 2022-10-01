@@ -285,6 +285,19 @@ fn ms ⇒ case ms of
     [ ⊢ ms_tr MS1' MS2']
 ;
 
+% Lemma (2):
+% IF multi_step M M' THEN multi_step (succ M) (succ M').
+rec mstep_succ : [ ⊢ multi_step M M'] → [ ⊢ multi_step (succ M) (succ M')] =
+/ total ms (mstep_succ m m' ms) /
+fn ms ⇒ case ms of
+| [ ⊢ ms_ref] ⇒ [ ⊢ ms_ref]
+| [ ⊢ ms_step S] ⇒ [ ⊢ ms_step (e_succ S)]
+| [ ⊢ ms_tr MS1 MS2] ⇒
+    let [ ⊢ MS1'] = mstep_succ [ ⊢ MS1] in
+    let [ ⊢ MS2'] = mstep_succ [ ⊢ MS2] in
+    [ ⊢ ms_tr MS1' MS2']
+;
+
 % Lemma (4):
 % IF multi_step M M' THEN
 %  multi_step (if_then_else M M2 M3) (if_then_else M' M2 M3).
