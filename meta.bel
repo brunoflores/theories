@@ -568,3 +568,21 @@ case s of
        let [ ⊢ B1] = step_bstep_to_bstep [ ⊢ S] [ ⊢ B1'] in
        [ ⊢ b_iszero_succ B1])
 ;
+
+rec mstep_bstep_to_bstep : [ ⊢ multi_step M N] → [ ⊢ bigstep N V] →
+                           [ ⊢ bigstep M V] =
+/ total s (mstep_bstep_to_bstep _ _ _ s) /
+fn s ⇒ fn b ⇒ case s of
+| [ ⊢ ms_ref] ⇒ b
+| [ ⊢ ms_step S'] ⇒ step_bstep_to_bstep [ ⊢ S'] b
+| [ ⊢ ms_tr S1 S2] ⇒
+    let [ ⊢ B2] = mstep_bstep_to_bstep [ ⊢ S2] b in
+    mstep_bstep_to_bstep [ ⊢ S1] [ ⊢ B2]
+;
+
+% Finally,
+rec mstep_to_bstep : [ ⊢ multi_step M V] → [ ⊢ value V] → [ ⊢ bigstep M V] =
+/ total s (mstep_to_bstep _ _ s _) /
+fn s ⇒ fn v ⇒ let [ ⊢ V] = v in
+              mstep_bstep_to_bstep s [ ⊢ b_value V]
+;
