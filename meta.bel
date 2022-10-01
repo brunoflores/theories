@@ -354,18 +354,25 @@ fn d ⇒ case d of
          let [ ⊢ MS0] = mstep_if_then_else [ ⊢ MS] [ ⊢ M1] [ ⊢ M2] in
          let [ ⊢ result MS1 W'] = terminate [ ⊢ D2] in
          [ ⊢ result (ms_tr (ms_tr MS0 (ms_step e_if_false)) MS1) W']
-     | [ ⊢ result MS v_z] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
-     | [ ⊢ result MS (v_succ V)] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS])
+     | [ ⊢ result MS v_z] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS (v_succ V)] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS])
 | [ ⊢ t_succ D] ⇒
     (case terminate [ ⊢ D] of
-     | [ ⊢ result MS v_true] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
-     | [ ⊢ result MS v_false] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
-     | [ ⊢ result MS V] ⇒ let [ ⊢ MS'] = mstep_succ [ ⊢ MS] in
-                          [ ⊢ result MS' (v_succ V)])
+     | [ ⊢ result MS v_true] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS v_false] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS V] ⇒
+	 let [ ⊢ MS'] = mstep_succ [ ⊢ MS] in
+         [ ⊢ result MS' (v_succ V)])
 | [ ⊢ t_pred D] ⇒
     (case terminate [ ⊢ D] of
-     | [ ⊢ result MS v_true] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
-     | [ ⊢ result MS v_false] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS v_true] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS v_false] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
      | [ ⊢ result MS v_z] ⇒
          let [ ⊢ MS'] = mstep_pred [ ⊢ MS] in
          [ ⊢ result (ms_tr MS' (ms_step (e_pred_zero ))) v_z]
@@ -374,8 +381,10 @@ fn d ⇒ case d of
          [ ⊢ result (ms_tr MS' (ms_step (e_pred_succ V))) V])
 | [ ⊢ t_iszero D] ⇒
     (case terminate [ ⊢ D] of
-     | [ ⊢ result MS v_true] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
-     | [ ⊢ result MS v_false] ⇒ impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS v_true] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
+     | [ ⊢ result MS v_false] ⇒
+	 impossible multi_tps [ ⊢ D] [ ⊢ MS]
      | [ ⊢ result MS v_z] ⇒
          let [ ⊢ MS'] = mstep_iszero [ ⊢ MS] in
          [ ⊢ result (ms_tr MS' (ms_step (e_iszero_zero))) v_true]
