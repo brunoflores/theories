@@ -110,8 +110,8 @@ mlam M ⇒ mlam N ⇒ mlam N' ⇒ fn s ⇒ case [_, x : tm _ ⊢ M] of
                                   [g ⊢ M2[.., N]]
                                   [g ⊢ S1] in
       let [g ⊢ MS2] = mstep_appr [g ⊢ M1[.., N']]
-                                  [g ⊢ M2[.., N]]
-                                  [g ⊢ M2[.., N']]
-                                  [g ⊢ S2] in
+                                 [g ⊢ M2[.., N]]
+                                 [g ⊢ M2[.., N']]
+                                 [g ⊢ S2] in
       m-trans [g ⊢ _ ] [g ⊢ MS1] [g ⊢ MS2]
 ;
